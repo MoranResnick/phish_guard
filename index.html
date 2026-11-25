@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="manifest" href="manifest.json">
+<title>PhishGuard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0e1a;
+    --bg-card: #111827;
+    --bg-input: #0d1220;
+    --neon-blue: #00d4ff;
+    --neon-green: #00ff88;
+    --neon-red: #ff3366;
+    --neon-yellow: #ffaa00;
+    --text: #e8eaf0;
+    --text-dim: #8892a4;
+    --border: #1e293b;
+    --radius: 16px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 20px 24px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,26,0.95);
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { font-size: 28px; }
+  .logo-text { font-size: 22px; font-weight: 800; color: var(--neon-blue); }
+  .logo-sub { font-size: 11px; color: var(--text-dim); margin-top: -2px; }
+  .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--neon-green); animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(0,255,136,0.5);
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+  /* ── Main ── */
+  main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+  /* ── Input area ── */
+  .input-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .input-label {
+    font-size: 15px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .input-hint { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; }
+
+  .paste-area {
+    width: 100%; min-height: 120px; padding: 16px;
+    background: var(--bg-input); border: 2px dashed var(--border);
+    border-radius: 12px; color: var(--text); font-family: 'Heebo', sans-serif;
+    font-size: 16px; line-height: 1.6; resize: none; outline: none;
+    direction: rtl; transition: border-color 0.3s;
+  }
+  .paste-area:focus { border-color: var(--neon-blue); border-style: solid; }
+  .paste-area::placeholder { color: #4a5568; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+
+  .btn {
+    flex: 1; padding: 14px; border-radius: 12px; border: none;
+    font-family: 'Heebo', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.3s; display: flex;
+    align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon-blue), #0088cc);
+    color: #fff;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:disabled { opacity: 0.4; }
+
+  .btn-paste {
+    background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2);
+    color: var(--neon-blue); flex: 0 0 auto; padding: 14px 20px;
+  }
+  .btn-paste:active { background: rgba(0,212,255,0.15); }
+
+  /* ── Detected links ── */
+  .detected-links {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; display: none;
+  }
+  .detected-links.show { display: block; animation: fadeUp 0.4s ease; }
+  .detected-header {
+    font-size: 14px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px; color: var(--neon-blue);
+  }
+  .link-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    direction: ltr; text-align: left; word-break: break-all;
+    transition: all 0.3s;
+  }
+  .link-chip .link-status { font-size: 18px; flex-shrink: 0; }
+
+  /* ── Progress ── */
+  .progress-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; display: none;
+  }
+  .progress-section.show { display: block; animation: fadeUp 0.4s ease; }
+  .progress-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .progress-bar-bg {
+    width: 100%; height: 6px; background: rgba(255,255,255,0.06);
+    border-radius: 3px; overflow: hidden; margin-bottom: 16px;
+  }
+  .progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
+    border-radius: 3px; transition: width 0.5s ease; width: 0%;
+  }
+  .progress-steps { display: flex; flex-direction: column; gap: 8px; }
+  .p-step {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--text-dim); padding: 6px 0;
+    transition: all 0.3s;
+  }
+  .p-step.active { color: var(--text); }
+  .p-step.done { color: var(--neon-green); }
+  .p-step-icon { width: 22px; text-align: center; font-size: 14px; }
+  .spinner { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Result cards ── */
+  .results-section { display: none; flex-direction: column; gap: 12px; }
+  .results-section.show { display: flex; }
+
+  .result-card {
+    border-radius: var(--radius); padding: 20px;
+    animation: fadeUp 0.5s ease;
+  }
+  .result-card.safe {
+    background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.25);
+  }
+  .result-card.phishing {
+    background: rgba(255,51,102,0.05); border: 1px solid rgba(255,51,102,0.25);
+  }
+  .result-card.suspicious {
+    background: rgba(255,170,0,0.05); border: 1px solid rgba(255,170,0,0.25);
+  }
+
+  .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .result-verdict { font-size: 22px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+  .result-verdict.safe { color: var(--neon-green); }
+  .result-verdict.phishing { color: var(--neon-red); }
+  .result-verdict.suspicious { color: var(--neon-yellow); }
+
+  .result-confidence {
+    font-size: 13px; font-weight: 700; padding: 4px 10px;
+    border-radius: 8px; font-family: 'JetBrains Mono', monospace;
+  }
+  .result-confidence.safe { background: rgba(0,255,136,0.1); color: var(--neon-green); }
+  .result-confidence.phishing { background: rgba(255,51,102,0.1); color: var(--neon-red); }
+  .result-confidence.suspicious { background: rgba(255,170,0,0.1); color: var(--neon-yellow); }
+
+  .result-url {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text-dim); direction: ltr; text-align: left;
+    word-break: break-all; margin-bottom: 12px;
+    padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px;
+  }
+
+  .result-flags { display: flex; flex-direction: column; gap: 6px; }
+  .flag {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 13px; color: var(--text-dim); padding: 6px 0;
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
+  .flag-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+  /* ── Tip banner ── */
+  .tip-banner {
+    background: rgba(255,51,102,0.06); border: 1px solid rgba(255,51,102,0.2);
+    border-radius: var(--radius); padding: 16px; display: none;
+    text-align: center; animation: fadeUp 0.5s ease;
+  }
+  .tip-banner.show { display: block; }
+  .tip-banner .tip-icon { font-size: 32px; margin-bottom: 6px; }
+  .tip-banner .tip-text { font-size: 18px; font-weight: 800; color: var(--neon-red); }
+  .tip-banner .tip-sub { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
+
+  .tip-banner.all-safe { background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.2); }
+  .tip-banner.all-safe .tip-text { color: var(--neon-green); }
+
+  /* ── History ── */
+  .history-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-top: 8px;
+  }
+  .history-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-dim); }
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 13px;
+  }
+  .history-item:last-child { border: none; }
+  .history-url {
+    font-family: 'JetBrains Mono', monospace; color: var(--text-dim);
+    direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 70%;
+  }
+  .history-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+  }
+  .history-badge.safe { background: rgba(0,255,136,0.1); color: var(--neon-green); }
+  .history-badge.phishing { background: rgba(255,51,102,0.1); color: var(--neon-red); }
+  .history-badge.suspicious { background: rgba(255,170,0,0.1); color: var(--neon-yellow); }
+
+  /* ── Install banner ── */
+  .install-banner {
+    background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(168,85,247,0.08));
+    border: 1px solid rgba(0,212,255,0.2); border-radius: var(--radius);
+    padding: 16px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .install-banner:active { transform: scale(0.98); }
+  .install-icon { font-size: 32px; }
+  .install-text h4 { font-size: 15px; font-weight: 700; }
+  .install-text p { font-size: 12px; color: var(--text-dim); }
+
+  /* ── Animations ── */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── Safe area ── */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    main { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-icon">🛡️</span>
+    <div>
+      <div class="logo-text">PhishGuard</div>
+      <div class="logo-sub">הגנה מפני קישורים מסוכנים</div>
+    </div>
+  </div>
+  <div class="status-dot" title="המערכת פעילה"></div>
+</header>
+
+<main>
+  <!-- Input Section -->
+  <div class="input-section">
+    <div class="input-label">📩 הדביקו הודעה או קישור</div>
+    <div class="input-hint">העתיקו הודעת SMS חשודה והדביקו כאן — המערכת תמצא את הקישורים לבד</div>
+    <textarea class="paste-area" id="pasteArea" placeholder="לדוגמה:
+שלום, חשבון הבנק שלך ננעל. לחץ כאן לשחרור:
+https://bank-leumi-verify.xyz/login"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-paste" id="pasteBtn" onclick="pasteFromClipboard()">📋 הדבק</button>
+      <button class="btn btn-primary" id="scanBtn" onclick="startScan()">🔍 בדוק עכשיו</button>
+    </div>
+  </div>
+
+  <!-- Detected Links -->
+  <div class="detected-links" id="detectedLinks">
+    <div class="detected-header">🔗 קישורים שנמצאו בהודעה:</div>
+    <div id="linksList"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-title"><span class="spinner">⚙️</span> מנתח...</div>
+    <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-steps">
+      <div class="p-step" id="ps1"><span class="p-step-icon">⏳</span> בדיקת מאגרי מודיעין</div>
+      <div class="p-step" id="ps2"><span class="p-step-icon">⏳</span> ניתוח דינמי בקופסת חול</div>
+      <div class="p-step" id="ps3"><span class="p-step-icon">⏳</span> הפעלת חוקי זיהוי</div>
+      <div class="p-step" id="ps4"><span class="p-step-icon">⏳</span> הגנה: השמדת Container</div>
+    </div>
+  </div>
+
+  <!-- Tip Banner -->
+  <div class="tip-banner" id="tipBanner">
+    <div class="tip-icon" id="tipIcon"></div>
+    <div class="tip-text" id="tipText"></div>
+    <div class="tip-sub" id="tipSub"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection"></div>
+
+  <!-- History -->
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="history-title">📜 היסטוריית בדיקות</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- Install PWA -->
+  <div class="install-banner" id="installBanner" style="display:none" onclick="installPWA()">
+    <span class="install-icon">📲</span>
+    <div class="install-text">
+      <h4>התקינו כאפליקציה</h4>
+      <p>הוסיפו למסך הבית לגישה מהירה — בלי חנות אפליקציות</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── URL detection regex ──
+const URL_REGEX = /https?:\/\/[^\s<>"')\]،,]+/gi;
+
+// ── History storage ──
+let scanHistory = JSON.parse(localStorage.getItem('phishguard_history') || '[]');
+
+// ── Render history on load ──
+renderHistory();
+
+// ── Paste from clipboard ──
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('pasteArea').value = text;
+    detectLinks(text);
+  } catch {
+    // Fallback - focus textarea so user can Ctrl+V
+    document.getElementById('pasteArea').focus();
+  }
+}
+
+// ── Auto-detect links on input ──
+document.getElementById('pasteArea').addEventListener('input', (e) => {
+  detectLinks(e.target.value);
+});
+
+function detectLinks(text) {
+  const links = text.match(URL_REGEX) || [];
+  const container = document.getElementById('detectedLinks');
+  const list = document.getElementById('linksList');
+
+  if (links.length === 0) {
+    container.classList.remove('show');
+    return;
+  }
+
+  list.innerHTML = links.map(url =>
+    `<div class="link-chip"><span class="link-status">🔗</span>${url}</div>`
+  ).join('');
+  container.classList.add('show');
+}
+
+// ── Scan simulation ──
+const scenarios = {
+  phishing: {
+    triggers: ['verify','bank-','leumi','paypa','g00gle','amaz0n','secure-login',
+               'account-verify','.xyz','.tk','.ml','update-info','faceb',
+               'microso','netfl','appleid','binance-','coinbase-','chase-','wells'],
+    verdict: '🚨 פישינג',
+    verdictEn: 'Phishing',
+    cls: 'phishing',
+    confidence: 92,
+    flags: [
+      { icon: '🔤', text: 'Typosquatting — דומיין מתחזה למותג מוכר' },
+      { icon: '📅', text: 'דומיין חדש — נרשם לפני 3 ימים בלבד' },
+      { icon: '🔒', text: 'תעודת SSL בת יומיים — חשוד מאוד' },
+      { icon: '⚠️', text: 'מילות פיתוי בדף: "verify your account"' },
+    ]
+  },
+  suspicious: {
+    triggers: ['bit.ly','tinyurl','t.co','short','free','winner','prize','gift','click'],
+    verdict: '⚠️ חשוד',
+    verdictEn: 'Suspicious',
+    cls: 'suspicious',
+    confidence: 64,
+    flags: [
+      { icon: '🔄', text: 'שרשרת של 4 הפניות (URL shortener)' },
+      { icon: '⚠️', text: 'מילות מפתח חשודות בתוכן הדף' },
+    ]
+  },
+  safe: {
+    verdict: '✅ בטוח',
+    verdictEn: 'Safe',
+    cls: 'safe',
+    confidence: 95,
+    flags: [
+      { icon: '✅', text: '0/72 מנועי VirusTotal — נקי' },
+      { icon: '✅', text: 'דומיין ותיק, תעודת SSL תקפה' },
+    ]
+  }
+};
+
+function classify(url) {
+  const u = url.toLowerCase();
+  for (const t of scenarios.phishing.triggers) { if (u.includes(t)) return 'phishing'; }
+  for (const t of scenarios.suspicious.triggers) { if (u.includes(t)) return 'suspicious'; }
+  return 'safe';
+}
+
+async function startScan() {
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) return;
+
+  const urls = text.match(URL_REGEX) || [];
+  if (urls.length === 0) {
+    alert('לא נמצאו קישורים בהודעה. נסו להדביק הודעה עם קישור.');
+    return;
+  }
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner">⚙️</span> בודק...';
+
+  // Show progress
+  const prog = document.getElementById('progressSection');
+  prog.classList.add('show');
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('resultsSection').innerHTML = '';
+  document.getElementById('tipBanner').classList.remove('show');
+
+  const steps = ['ps1','ps2','ps3','ps4'];
+  const delays = [1200, 2000, 1200, 600];
+  const progBar = document.getElementById('progressBar');
+
+  for (let i = 0; i < steps.length; i++) {
+    const el = document.getElementById(steps[i]);
+    el.className = 'p-step active';
+    el.querySelector('.p-step-icon').innerHTML = '<span class="spinner">⚙️</span>';
+    progBar.style.width = ((i+1) / steps.length * 100) + '%';
+    await sleep(delays[i]);
+    el.className = 'p-step done';
+    el.querySelector('.p-step-icon').textContent = '✅';
+  }
+
+  await sleep(400);
+  prog.classList.remove('show');
+
+  // Build results
+  const resultsEl = document.getElementById('resultsSection');
+  let hasPhishing = false;
+  let allSafe = true;
+
+  for (const url of urls) {
+    const type = classify(url);
+    const sc = scenarios[type];
+
+    if (type === 'phishing') hasPhishing = true;
+    if (type !== 'safe') allSafe = false;
+
+    const card = document.createElement('div');
+    card.className = 'result-card ' + sc.cls;
+    card.innerHTML = `
+      <div class="result-header">
+        <div class="result-verdict ${sc.cls}">${sc.verdict}</div>
+        <div class="result-confidence ${sc.cls}">${sc.confidence}%</div>
+      </div>
+      <div class="result-url">${url}</div>
+      <div class="result-flags">
+        ${sc.flags.map(f => `<div class="flag"><span class="flag-icon">${f.icon}</span>${f.text}</div>`).join('')}
+      </div>
+    `;
+    resultsEl.appendChild(card);
+
+    // Save to history
+    addToHistory(url, sc.verdictEn, sc.cls);
+  }
+
+  resultsEl.classList.add('show');
+
+  // Show tip banner
+  const tip = document.getElementById('tipBanner');
+  if (hasPhishing) {
+    tip.className = 'tip-banner show';
+    document.getElementById('tipIcon').textContent = '🚫';
+    document.getElementById('tipText').textContent = 'אל תלחצו על הקישור!';
+    document.getElementById('tipSub').textContent = 'זוהה קישור פישינג. מחקו את ההודעה ודווחו לשולח.';
+  } else if (allSafe) {
+    tip.className = 'tip-banner all-safe show';
+    document.getElementById('tipIcon').textContent = '👍';
+    document.getElementById('tipText').textContent = 'הקישורים נראים בטוחים';
+    document.getElementById('tipSub').textContent = 'לא זוהו איומים. עדיין, היזהרו מהזנת מידע אישי.';
+  }
+
+  // Update link chips
+  const chips = document.querySelectorAll('.link-chip');
+  urls.forEach((url, i) => {
+    if (chips[i]) {
+      const type = classify(url);
+      const icon = type === 'safe' ? '✅' : type === 'phishing' ? '🚨' : '⚠️';
+      chips[i].querySelector('.link-status').textContent = icon;
+    }
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 בדוק עכשיו';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── History ──
+function addToHistory(url, verdict, cls) {
+  scanHistory.unshift({ url, verdict, cls, time: new Date().toLocaleTimeString('he-IL') });
+  if (scanHistory.length > 20) scanHistory.pop();
+  localStorage.setItem('phishguard_history', JSON.stringify(scanHistory));
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if (scanHistory.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = scanHistory.slice(0, 10).map(h => `
+    <div class="history-item">
+      <span class="history-url">${h.url}</span>
+      <span class="history-badge ${h.cls}">${h.verdict}</span>
+    </div>
+  `).join('');
+}
+
+// ── PWA Install ──
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      document.getElementById('installBanner').style.display = 'none';
+      deferredPrompt = null;
+    });
+  }
+}
+</script>
+</body>
+</html>

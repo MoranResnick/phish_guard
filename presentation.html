@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhishGuard — מערכת גילוי פישינג</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-dark: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2235;
+    --neon-blue: #00d4ff;
+    --neon-green: #00ff88;
+    --neon-red: #ff3366;
+    --neon-yellow: #ffaa00;
+    --neon-purple: #a855f7;
+    --text-primary: #e8eaf0;
+    --text-secondary: #8892a4;
+    --border-color: #1e293b;
+    --glow-blue: 0 0 30px rgba(0,212,255,0.3);
+    --glow-green: 0 0 30px rgba(0,255,136,0.3);
+    --glow-red: 0 0 30px rgba(255,51,102,0.3);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ── */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove { to { background-position: 60px 60px; } }
+
+  .bg-glow {
+    position: fixed; z-index: 0; pointer-events: none;
+    width: 600px; height: 600px; border-radius: 50%;
+    filter: blur(150px); opacity: 0.12;
+  }
+  .bg-glow-1 { top: -200px; right: -100px; background: var(--neon-blue); }
+  .bg-glow-2 { bottom: -200px; left: -100px; background: var(--neon-purple); }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed; top: 0; right: 0; left: 0; z-index: 100;
+    background: rgba(10,14,26,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 40px; height: 70px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 12px; }
+  .nav-logo .shield { font-size: 28px; }
+  .nav-logo span { font-size: 22px; font-weight: 700; color: var(--neon-blue); letter-spacing: -0.5px; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    color: var(--text-secondary); text-decoration: none; font-size: 15px; font-weight: 500;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--neon-blue); }
+
+  /* ── Sections ── */
+  section { position: relative; z-index: 1; padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: 2px;
+    color: var(--neon-blue); text-transform: uppercase;
+    border: 1px solid rgba(0,212,255,0.3); padding: 6px 16px; border-radius: 50px;
+    margin-bottom: 20px; background: rgba(0,212,255,0.05);
+  }
+  .section-title { font-size: 42px; font-weight: 900; margin-bottom: 16px; line-height: 1.2; }
+  .section-subtitle { font-size: 20px; color: var(--text-secondary); max-width: 700px; margin-bottom: 50px; font-weight: 300; }
+
+  /* ── Hero ── */
+  #hero { padding-top: 160px; text-align: center; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #hero .section-subtitle { margin: 0 auto 50px; }
+  .hero-title {
+    font-size: clamp(48px, 7vw, 80px); font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 24px; line-height: 1.1;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2);
+    padding: 8px 20px; border-radius: 50px; margin-bottom: 30px;
+    font-size: 14px; color: var(--neon-green);
+  }
+  .hero-badge .dot { width: 8px; height: 8px; background: var(--neon-green); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .hero-stats { display: flex; gap: 50px; margin-top: 60px; justify-content: center; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-number { font-size: 42px; font-weight: 900; }
+  .stat-number.blue { color: var(--neon-blue); }
+  .stat-number.green { color: var(--neon-green); }
+  .stat-number.purple { color: var(--neon-purple); }
+  .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ── Problem section ── */
+  .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+  .problem-card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+    padding: 32px; transition: all 0.3s;
+  }
+  .problem-card:hover { border-color: var(--neon-red); box-shadow: var(--glow-red); transform: translateY(-4px); }
+  .problem-icon { font-size: 36px; margin-bottom: 16px; }
+  .problem-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+  .problem-card p { color: var(--text-secondary); font-size: 15px; }
+
+  /* ── Phases (workflow) ── */
+  .phases-container { display: flex; flex-direction: column; gap: 32px; }
+
+  .phase-card {
+    display: grid; grid-template-columns: 80px 1fr; gap: 30px;
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+    padding: 36px; transition: all 0.4s; position: relative; overflow: hidden;
+  }
+  .phase-card::before {
+    content: ''; position: absolute; top: 0; right: 0; width: 4px; height: 100%;
+    border-radius: 0 20px 20px 0;
+  }
+  .phase-card.phase-1::before { background: var(--neon-blue); }
+  .phase-card.phase-2::before { background: var(--neon-yellow); }
+  .phase-card.phase-3::before { background: var(--neon-green); }
+
+  .phase-card:hover { transform: translateX(-6px); border-color: rgba(0,212,255,0.3); }
+
+  .phase-number {
+    width: 70px; height: 70px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
+  }
+  .phase-1 .phase-number { background: rgba(0,212,255,0.1); color: var(--neon-blue); border: 1px solid rgba(0,212,255,0.3); }
+  .phase-2 .phase-number { background: rgba(255,170,0,0.1); color: var(--neon-yellow); border: 1px solid rgba(255,170,0,0.3); }
+  .phase-3 .phase-number { background: rgba(0,255,136,0.1); color: var(--neon-green); border: 1px solid rgba(0,255,136,0.3); }
+
+  .phase-content h3 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .phase-content .phase-tag { font-size: 13px; font-weight: 600; margin-bottom: 14px; display: inline-block; padding: 4px 12px; border-radius: 6px; }
+  .phase-1 .phase-tag { background: rgba(0,212,255,0.1); color: var(--neon-blue); }
+  .phase-2 .phase-tag { background: rgba(255,170,0,0.1); color: var(--neon-yellow); }
+  .phase-3 .phase-tag { background: rgba(0,255,136,0.1); color: var(--neon-green); }
+  .phase-content p { color: var(--text-secondary); font-size: 16px; margin-bottom: 16px; }
+
+  .phase-features { display: flex; flex-wrap: wrap; gap: 10px; }
+  .phase-feature {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);
+    padding: 6px 14px; border-radius: 8px; font-size: 13px; color: var(--text-secondary);
+  }
+
+  /* ── Demo ── */
+  .demo-box {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+    padding: 40px; max-width: 800px; margin: 0 auto;
+  }
+  .demo-input-row { display: flex; gap: 12px; margin-bottom: 24px; }
+  .demo-input {
+    flex: 1; padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border-color);
+    background: var(--bg-dark); color: var(--text-primary); font-size: 16px;
+    font-family: 'JetBrains Mono', monospace; direction: ltr; text-align: left;
+    outline: none; transition: border-color 0.3s;
+  }
+  .demo-input:focus { border-color: var(--neon-blue); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
+  .demo-btn {
+    padding: 16px 32px; border-radius: 12px; border: none; cursor: pointer;
+    font-size: 16px; font-weight: 700; font-family: 'Heebo', sans-serif;
+    background: linear-gradient(135deg, var(--neon-blue), #0088cc);
+    color: #fff; transition: all 0.3s; white-space: nowrap;
+  }
+  .demo-btn:hover { transform: scale(1.03); box-shadow: var(--glow-blue); }
+  .demo-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .demo-output { display: none; }
+  .demo-output.active { display: block; }
+
+  /* Progress */
+  .demo-progress { margin-bottom: 24px; }
+  .progress-step {
+    display: flex; align-items: center; gap: 14px; padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 15px; color: var(--text-secondary); transition: all 0.4s;
+  }
+  .progress-step.active { color: var(--text-primary); }
+  .progress-step.done { color: var(--neon-green); }
+  .progress-step .step-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .spinner { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result card */
+  .result-card {
+    border-radius: 16px; padding: 28px; margin-top: 20px;
+    display: none; animation: fadeUp 0.5s ease;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .result-card.show { display: block; }
+  .result-card.safe { background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.3); }
+  .result-card.phishing { background: rgba(255,51,102,0.06); border: 1px solid rgba(255,51,102,0.3); }
+  .result-card.suspicious { background: rgba(255,170,0,0.06); border: 1px solid rgba(255,170,0,0.3); }
+
+  .result-verdict { font-size: 32px; font-weight: 900; margin-bottom: 6px; display: flex; align-items: center; gap: 12px; }
+  .result-verdict.safe { color: var(--neon-green); }
+  .result-verdict.phishing { color: var(--neon-red); }
+  .result-verdict.suspicious { color: var(--neon-yellow); }
+  .result-details { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .result-detail { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 14px; }
+  .result-detail-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .result-detail-value { font-size: 15px; font-weight: 600; font-family: 'JetBrains Mono', monospace; direction: ltr; text-align: left; }
+
+  /* Confidence bar */
+  .confidence-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .confidence-bar { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .confidence-bar.safe { background: var(--neon-green); }
+  .confidence-bar.phishing { background: var(--neon-red); }
+  .confidence-bar.suspicious { background: var(--neon-yellow); }
+
+  /* ── Tech stack ── */
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+  .tech-card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+    padding: 28px; text-align: center; transition: all 0.3s;
+  }
+  .tech-card:hover { border-color: var(--neon-blue); transform: translateY(-4px); box-shadow: var(--glow-blue); }
+  .tech-icon { font-size: 40px; margin-bottom: 14px; }
+  .tech-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .tech-card p { font-size: 13px; color: var(--text-secondary); }
+
+  /* ── Architecture ── */
+  .arch-diagram {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+    padding: 40px; overflow-x: auto;
+  }
+  .arch-flow { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 20px 0; }
+  .arch-node {
+    background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 14px;
+    padding: 20px 24px; text-align: center; min-width: 150px; transition: all 0.3s;
+  }
+  .arch-node:hover { border-color: var(--neon-blue); box-shadow: var(--glow-blue); }
+  .arch-node .node-icon { font-size: 28px; margin-bottom: 8px; }
+  .arch-node .node-label { font-size: 14px; font-weight: 600; }
+  .arch-node .node-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .arch-arrow { font-size: 24px; color: var(--neon-blue); animation: arrowPulse 2s infinite; }
+  @keyframes arrowPulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .arch-apis {
+    display: flex; justify-content: center; gap: 16px; margin-top: 24px; flex-wrap: wrap;
+  }
+  .arch-api {
+    background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Security features ── */
+  .security-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+  .security-card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+    padding: 24px; display: flex; gap: 16px; align-items: flex-start; transition: all 0.3s;
+  }
+  .security-card:hover { border-color: var(--neon-green); }
+  .security-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .security-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .security-card p { font-size: 14px; color: var(--text-secondary); }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 40px; border-top: 1px solid var(--border-color);
+    color: var(--text-secondary); font-size: 14px; position: relative; z-index: 1;
+  }
+
+  /* ── Scroll animations ── */
+  .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.16,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    section { padding: 60px 20px; }
+    .hero-title { font-size: 36px; }
+    .section-title { font-size: 30px; }
+    .phase-card { grid-template-columns: 1fr; }
+    .demo-input-row { flex-direction: column; }
+    .result-details { grid-template-columns: 1fr; }
+    .hero-stats { gap: 30px; }
+    .nav-links { display: none; }
+    .arch-flow { flex-direction: column; }
+    .arch-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="nav-logo">
+    <span class="shield">🛡️</span>
+    <span>PhishGuard</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#problem">הבעיה</a></li>
+    <li><a href="#how">איך זה עובד</a></li>
+    <li><a href="#demo">הדגמה חיה</a></li>
+    <li><a href="#tech">טכנולוגיות</a></li>
+    <li><a href="#security">אבטחה</a></li>
+  </ul>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    מערכת אוטומטית לגילוי איומים בזמן אמת
+  </div>
+  <h1 class="hero-title">PhishGuard</h1>
+  <p class="section-subtitle" style="font-size: 22px;">
+    מערכת Backend חכמה שמזהה קישורי פישינג וספאם<br>
+    <strong>בלי לחשוף את המחשב שלך לסכנה — אף פעם.</strong>
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-number blue" id="counterAPIs">0</div>
+      <div class="stat-label">ממשקי מודיעין (APIs)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number green" id="counterPhases">0</div>
+      <div class="stat-label">שלבי ניתוח</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number purple" id="counterRules">0</div>
+      <div class="stat-label">חוקי זיהוי</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROBLEM ═══ -->
+<section id="problem">
+  <div class="reveal">
+    <span class="section-label">הבעיה</span>
+    <h2 class="section-title">למה צריך את זה?</h2>
+    <p class="section-subtitle">בכל יום, מיליוני אנשים לוחצים על קישורים מסוכנים שנראים לגיטימיים.</p>
+  </div>
+  <div class="problem-grid">
+    <div class="problem-card reveal">
+      <div class="problem-icon">🎣</div>
+      <h3>התחזות (Phishing)</h3>
+      <p>אתרים שנראים כמו הבנק שלך, PayPal, או Google — אבל גונבים סיסמאות ופרטי אשראי.</p>
+    </div>
+    <div class="problem-card reveal">
+      <div class="problem-icon">🔗</div>
+      <h3>קישורים מקוצרים</h3>
+      <p>שירותי קיצור כמו bit.ly מסתירים את היעד האמיתי. לא ניתן לדעת לאן הקישור מוביל בלי ללחוץ.</p>
+    </div>
+    <div class="problem-card reveal">
+      <div class="problem-icon">💀</div>
+      <h3>תוכנות זדוניות</h3>
+      <p>לחיצה על הקישור הלא נכון יכולה להתקין תוכנה זדונית, כופר (Ransomware), או רוגלה (Spyware).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section id="how">
+  <div class="reveal">
+    <span class="section-label">איך זה עובד</span>
+    <h2 class="section-title">3 שלבי ניתוח אוטומטיים</h2>
+    <p class="section-subtitle">מהיר כשאפשר, מעמיק כשצריך — והמחשב שלך לעולם לא נחשף.</p>
+  </div>
+
+  <div class="phases-container">
+    <div class="phase-card phase-1 reveal">
+      <div class="phase-number">1</div>
+      <div class="phase-content">
+        <span class="phase-tag">בדיקה סטטית — API</span>
+        <h3>בדיקת מוניטין מול מאגרי מודיעין</h3>
+        <p>הקישור נשלח (כטקסט בלבד, ללא כניסה) ל-4 מאגרי מודיעין עולמיים במקביל. אם מזוהה כמסוכן — מחזירים תשובה מיידית.</p>
+        <div class="phase-features">
+          <span class="phase-feature">🔵 VirusTotal</span>
+          <span class="phase-feature">🟠 URLScan.io</span>
+          <span class="phase-feature">🟢 Google Safe Browsing</span>
+          <span class="phase-feature">🔴 PhishTank</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card phase-2 reveal">
+      <div class="phase-number">2</div>
+      <div class="phase-content">
+        <span class="phase-tag">ניתוח דינמי — Sandbox</span>
+        <h3>ביקור בטוח בתוך קופסת חול</h3>
+        <p>אם הקישור לא מוכר — מערכת Docker מרימה מכונה וירטואלית חד-פעמית, שנכנסת לאתר עם דפדפן מבודד, מצלמת את המסך, בודקת הפניות, תעודות SSL ורישום דומיין — ואז <strong>משמידה את עצמה</strong>.</p>
+        <div class="phase-features">
+          <span class="phase-feature">🐳 Docker Container</span>
+          <span class="phase-feature">🎭 Playwright Browser</span>
+          <span class="phase-feature">📸 צילום מסך</span>
+          <span class="phase-feature">🔒 בדיקת SSL</span>
+          <span class="phase-feature">📋 WHOIS Lookup</span>
+          <span class="phase-feature">🔥 השמדה עצמית</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card phase-3 reveal">
+      <div class="phase-number">3</div>
+      <div class="phase-content">
+        <span class="phase-tag">מנוע החלטה — Heuristics</span>
+        <h3>ניתוח חכם ומתן פסק דין</h3>
+        <p>6 חוקי זיהוי מנתחים את הנתונים: האם הדומיין דומה לבנק? האם יש מילות פיתוי? האם תעודת ה-SSL חדשה מדי? התוצאה: <strong>Safe / Suspicious / Phishing</strong> עם אחוז ביטחון.</p>
+        <div class="phase-features">
+          <span class="phase-feature">🔤 Typosquatting</span>
+          <span class="phase-feature">⚠️ מילות מפתח חשודות</span>
+          <span class="phase-feature">📅 גיל דומיין</span>
+          <span class="phase-feature">🏢 אי-התאמת SSL</span>
+          <span class="phase-feature">🔄 הפניות מוגזמות</span>
+          <span class="phase-feature">📜 תקינות תעודה</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LIVE DEMO ═══ -->
+<section id="demo">
+  <div class="reveal">
+    <span class="section-label">הדגמה חיה</span>
+    <h2 class="section-title">נסו בעצמכם 🚀</h2>
+    <p class="section-subtitle">הכניסו כתובת URL ותראו איך המערכת מנתחת אותה (סימולציה).</p>
+  </div>
+
+  <div class="demo-box reveal">
+    <div class="demo-input-row">
+      <input class="demo-input" id="demoUrl" type="text" placeholder="https://example.com" value="https://paypa1-secure.xyz/login" />
+      <button class="demo-btn" id="demoBtn" onclick="runDemo()">🔍 נתח קישור</button>
+    </div>
+
+    <div class="demo-output" id="demoOutput">
+      <div class="demo-progress" id="demoProgress">
+        <div class="progress-step" id="step1"><span class="step-icon">⏳</span> שלב 1: בדיקת מאגרי מודיעין (VirusTotal, URLScan)...</div>
+        <div class="progress-step" id="step2"><span class="step-icon">⏳</span> שלב 2: הרמת Sandbox → כניסה לאתר → צילום מסך...</div>
+        <div class="progress-step" id="step3"><span class="step-icon">⏳</span> שלב 3: ניתוח היוריסטי — בדיקת חוקים...</div>
+        <div class="progress-step" id="step4"><span class="step-icon">⏳</span> השמדת Container...</div>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <div class="result-verdict" id="resultVerdict"></div>
+        <div>
+          <div class="result-detail-label">רמת ביטחון</div>
+          <div class="confidence-bar-bg"><div class="confidence-bar" id="confBar" style="width:0%"></div></div>
+        </div>
+        <div class="result-details" id="resultDetails"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<section id="arch">
+  <div class="reveal">
+    <span class="section-label">ארכיטקטורה</span>
+    <h2 class="section-title">מבנה המערכת</h2>
+    <p class="section-subtitle">כל רכיב מבודד — המחשב שלך לעולם לא נגע בקישור.</p>
+  </div>
+
+  <div class="arch-diagram reveal">
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="node-icon">👤</div>
+        <div class="node-label">לקוח / Webhook</div>
+        <div class="node-sub">שולח URL</div>
+      </div>
+      <div class="arch-arrow">←</div>
+      <div class="arch-node" style="border-color: var(--neon-blue);">
+        <div class="node-icon">⚡</div>
+        <div class="node-label">FastAPI Server</div>
+        <div class="node-sub">ולידציה + ניתוב</div>
+      </div>
+      <div class="arch-arrow">←</div>
+      <div class="arch-node">
+        <div class="node-icon">🧠</div>
+        <div class="node-label">Orchestrator</div>
+        <div class="node-sub">מתאם 3 שלבים</div>
+      </div>
+      <div class="arch-arrow">←</div>
+      <div class="arch-node" style="border-color: var(--neon-green);">
+        <div class="node-icon">📊</div>
+        <div class="node-label">Decision Engine</div>
+        <div class="node-sub">פסק דין סופי</div>
+      </div>
+    </div>
+    <div class="arch-apis">
+      <div class="arch-api">🔵 VirusTotal API</div>
+      <div class="arch-api">🟠 URLScan.io API</div>
+      <div class="arch-api">🟢 Google Safe Browsing</div>
+      <div class="arch-api">🐳 Docker Sandbox</div>
+      <div class="arch-api">🎭 Playwright Browser</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TECH STACK ═══ -->
+<section id="tech">
+  <div class="reveal">
+    <span class="section-label">טכנולוגיות</span>
+    <h2 class="section-title">מה מתחת למכסה</h2>
+  </div>
+  <div class="tech-grid">
+    <div class="tech-card reveal">
+      <div class="tech-icon">🐍</div>
+      <h4>Python + FastAPI</h4>
+      <p>שרת אסינכרוני מהיר עם תיעוד אוטומטי</p>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-icon">🐳</div>
+      <h4>Docker</h4>
+      <p>Containers חד-פעמיים מבודדים לניתוח דינמי</p>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-icon">🎭</div>
+      <h4>Playwright</h4>
+      <p>דפדפן אוטומטי Headless לביקור בטוח באתרים</p>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-icon">🔌</div>
+      <h4>AIOHTTP / HTTPX</h4>
+      <p>קריאות API אסינכרוניות במקביל — מהיר ויעיל</p>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-icon">📐</div>
+      <h4>Pydantic</h4>
+      <p>ולידציה קפדנית של כל קלט — Zero Trust</p>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-icon">🔐</div>
+      <h4>TLS / WHOIS / Levenshtein</h4>
+      <p>ניתוח תעודות, גיל דומיין, וזיהוי Typosquatting</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECURITY ═══ -->
+<section id="security">
+  <div class="reveal">
+    <span class="section-label">שכבות אבטחה</span>
+    <h2 class="section-title">בנוי מהיסוד להיות בטוח</h2>
+    <p class="section-subtitle">6 שכבות הגנה מבטיחות שהמחשב שלך לא ייחשף לאיום.</p>
+  </div>
+  <div class="security-grid">
+    <div class="security-card reveal">
+      <span class="security-icon">🛡️</span>
+      <div>
+        <h4>הגנת SSRF</h4>
+        <p>חסימת IP פנימיים, סכמות מסוכנות, ו-credentials מוטמעים.</p>
+      </div>
+    </div>
+    <div class="security-card reveal">
+      <span class="security-icon">📡</span>
+      <div>
+        <h4>רשת מבודדת</h4>
+        <p>ה-Sandbox רץ ברשת Docker נפרדת — ללא גישה לשרת ה-API או למחשב המארח.</p>
+      </div>
+    </div>
+    <div class="security-card reveal">
+      <span class="security-icon">🔒</span>
+      <div>
+        <h4>Cap Drop ALL</h4>
+        <p>כל הרשאות Linux מוסרות מה-Container. אפס יכולות מיוחדות.</p>
+      </div>
+    </div>
+    <div class="security-card reveal">
+      <span class="security-icon">📄</span>
+      <div>
+        <h4>מערכת קבצים לקריאה בלבד</h4>
+        <p>Root FS של ה-Container הוא read-only. רק /tmp זמין לכתיבה (עם noexec).</p>
+      </div>
+    </div>
+    <div class="security-card reveal">
+      <span class="security-icon">👤</span>
+      <div>
+        <h4>משתמש Non-Root</h4>
+        <p>הדפדפן רץ כמשתמש sandbox (לא root) — הגנה מפני Privilege Escalation.</p>
+      </div>
+    </div>
+    <div class="security-card reveal">
+      <span class="security-icon">🔥</span>
+      <div>
+        <h4>השמדה עצמית</h4>
+        <p>force=True remove בבלוק finally — ה-Container מושמד גם אם קורה שגיאה.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <p>🛡️ PhishGuard — פרויקט אבטחת מידע &nbsp;|&nbsp; נבנה עם Python, Docker & Playwright</p>
+</footer>
+
+<script>
+// ── Counter animation ──
+function animateCounter(el, target, duration) {
+  let start = 0;
+  const step = timestamp => {
+    if (!start) start = timestamp;
+    const progress = Math.min((timestamp - start) / duration, 1);
+    el.textContent = Math.floor(progress * target);
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ── Scroll reveal ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── Counters on hero visible ──
+let countersStarted = false;
+const heroObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && !countersStarted) {
+    countersStarted = true;
+    animateCounter(document.getElementById('counterAPIs'), 4, 1200);
+    animateCounter(document.getElementById('counterPhases'), 3, 1000);
+    animateCounter(document.getElementById('counterRules'), 6, 1400);
+  }
+}, { threshold: 0.3 });
+heroObs.observe(document.getElementById('hero'));
+
+// ── Demo simulation ──
+const demoScenarios = {
+  phishing: {
+    triggers: ['paypa1', 'paypal-secure', 'g00gle', 'amaz0n', 'facebo0k', 'microsfot', 'netfl1x', 'appleid-verify', '.xyz/login', 'verify-account', 'secure-login'],
+    verdict: 'Phishing 🚨',
+    verdictClass: 'phishing',
+    confidence: 92,
+    details: [
+      { label: 'כלל שהופעל', value: 'Typosquatting — דומיין דומה ל-PayPal' },
+      { label: 'גיל דומיין', value: '3 ימים בלבד ⚠️' },
+      { label: 'תעודת SSL', value: "Let's Encrypt — בת 2 ימים" },
+      { label: 'הפניות', value: 'bit.ly → redir.io → paypa1-secure.xyz' },
+    ]
+  },
+  suspicious: {
+    triggers: ['bit.ly', 'tinyurl', 'short', 'free-gift', 'winner', 'prize', 'click-here'],
+    verdict: 'Suspicious ⚠️',
+    verdictClass: 'suspicious',
+    confidence: 64,
+    details: [
+      { label: 'ממצא', value: 'שרשרת 4 הפניות (URL shortener)' },
+      { label: 'מילות מפתח', value: 'נמצא "verify your account"' },
+      { label: 'תעודת SSL', value: 'תקינה — 180 ימים' },
+      { label: 'גיל דומיין', value: '45 ימים' },
+    ]
+  },
+  safe: {
+    verdict: 'Safe ✅',
+    verdictClass: 'safe',
+    confidence: 95,
+    details: [
+      { label: 'VirusTotal', value: '0/72 engines — נקי' },
+      { label: 'URLScan.io', value: 'לא זוהה כמסוכן' },
+      { label: 'תעודת SSL', value: 'תקפה — DigiCert — 2 שנים' },
+      { label: 'גיל דומיין', value: '8,540 ימים (23+ שנים)' },
+    ]
+  }
+};
+
+function classifyInput(url) {
+  url = url.toLowerCase();
+  for (const t of demoScenarios.phishing.triggers) { if (url.includes(t)) return 'phishing'; }
+  for (const t of demoScenarios.suspicious.triggers) { if (url.includes(t)) return 'suspicious'; }
+  return 'safe';
+}
+
+async function runDemo() {
+  const url = document.getElementById('demoUrl').value.trim();
+  if (!url) return;
+
+  const btn = document.getElementById('demoBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ מנתח...';
+
+  document.getElementById('demoOutput').classList.add('active');
+  const resultCard = document.getElementById('resultCard');
+  resultCard.classList.remove('show');
+  resultCard.className = 'result-card';
+
+  const steps = ['step1','step2','step3','step4'];
+  steps.forEach(s => {
+    const el = document.getElementById(s);
+    el.className = 'progress-step';
+    el.querySelector('.step-icon').textContent = '⏳';
+  });
+
+  const labels = ['בדיקת מאגרי מודיעין...', 'הרמת Sandbox + ביקור באתר...', 'ניתוח היוריסטי...', 'השמדת Container...'];
+  const delays = [1500, 2500, 1500, 800];
+
+  for (let i = 0; i < steps.length; i++) {
+    const el = document.getElementById(steps[i]);
+    el.className = 'progress-step active';
+    el.querySelector('.step-icon').innerHTML = '<span class="spinner">⚙️</span>';
+    await new Promise(r => setTimeout(r, delays[i]));
+    el.className = 'progress-step done';
+    el.querySelector('.step-icon').textContent = '✅';
+  }
+
+  const type = classifyInput(url);
+  const scenario = demoScenarios[type];
+
+  const verdict = document.getElementById('resultVerdict');
+  verdict.textContent = scenario.verdict;
+  verdict.className = 'result-verdict ' + scenario.verdictClass;
+
+  resultCard.className = 'result-card ' + scenario.verdictClass + ' show';
+
+  const confBar = document.getElementById('confBar');
+  confBar.className = 'confidence-bar ' + scenario.verdictClass;
+  setTimeout(() => { confBar.style.width = scenario.confidence + '%'; }, 100);
+
+  const detailsEl = document.getElementById('resultDetails');
+  detailsEl.innerHTML = scenario.details.map(d =>
+    `<div class="result-detail"><div class="result-detail-label">${d.label}</div><div class="result-detail-value">${d.value}</div></div>`
+  ).join('');
+
+  btn.disabled = false;
+  btn.textContent = '🔍 נתח קישור';
+}
+</script>
+</body>
+</html>
