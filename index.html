@@ -51,15 +51,36 @@
   .logo-icon { font-size: 28px; }
   .logo-text { font-size: 22px; font-weight: 800; color: var(--neon-blue); }
   .logo-sub { font-size: 11px; color: var(--text-dim); margin-top: -2px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .settings-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    color: var(--text-dim); border-radius: 10px; padding: 6px 10px;
+    font-size: 15px; cursor: pointer;
+  }
   .status-dot {
     width: 10px; height: 10px; border-radius: 50%;
-    background: var(--neon-green); animation: pulse 2s infinite;
-    box-shadow: 0 0 10px rgba(0,255,136,0.5);
+    background: var(--neon-yellow); animation: pulse 2s infinite;
   }
+  .status-dot.online { background: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.5); }
+  .status-dot.offline { background: var(--neon-red); box-shadow: 0 0 10px rgba(255,51,102,0.5); }
   @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
 
   /* ── Main ── */
   main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+  /* ── Settings drawer ── */
+  .settings-card {
+    background: var(--bg-card); border: 1px solid var(--neon-blue);
+    border-radius: var(--radius); padding: 16px; display: none;
+  }
+  .settings-card.show { display: block; animation: fadeUp 0.3s ease; }
+  .settings-card label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+  .settings-input {
+    width: 100%; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg-input);
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    direction: ltr; text-align: left; margin-bottom: 10px;
+  }
 
   /* ── Input area ── */
   .input-section {
@@ -99,9 +120,15 @@
 
   .btn-paste {
     background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2);
-    color: var(--neon-blue); flex: 0 0 auto; padding: 14px 20px;
+    color: var(--neon-blue); flex: 0 0 auto; padding: 14px 16px;
   }
   .btn-paste:active { background: rgba(0,212,255,0.15); }
+
+  .btn-clear {
+    background: rgba(255,51,102,0.08); border: 1px solid rgba(255,51,102,0.2);
+    color: var(--neon-red); flex: 0 0 auto; padding: 14px 16px;
+  }
+  .btn-clear:active { background: rgba(255,51,102,0.18); }
 
   /* ── Detected links ── */
   .detected-links {
@@ -132,21 +159,13 @@
   .progress-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .progress-bar-bg {
     width: 100%; height: 6px; background: rgba(255,255,255,0.06);
-    border-radius: 3px; overflow: hidden; margin-bottom: 16px;
+    border-radius: 3px; overflow: hidden; margin-bottom: 12px;
   }
   .progress-bar {
     height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
-    border-radius: 3px; transition: width 0.5s ease; width: 0%;
+    border-radius: 3px; transition: width 0.5s ease; width: 35%;
   }
-  .progress-steps { display: flex; flex-direction: column; gap: 8px; }
-  .p-step {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 14px; color: var(--text-dim); padding: 6px 0;
-    transition: all 0.3s;
-  }
-  .p-step.active { color: var(--text); }
-  .p-step.done { color: var(--neon-green); }
-  .p-step-icon { width: 22px; text-align: center; font-size: 14px; }
+  .progress-sub { font-size: 13px; color: var(--text-dim); }
   .spinner { animation: spin 1s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -158,15 +177,9 @@
     border-radius: var(--radius); padding: 20px;
     animation: fadeUp 0.5s ease;
   }
-  .result-card.safe {
-    background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.25);
-  }
-  .result-card.phishing {
-    background: rgba(255,51,102,0.05); border: 1px solid rgba(255,51,102,0.25);
-  }
-  .result-card.suspicious {
-    background: rgba(255,170,0,0.05); border: 1px solid rgba(255,170,0,0.25);
-  }
+  .result-card.safe { background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.25); }
+  .result-card.phishing { background: rgba(255,51,102,0.05); border: 1px solid rgba(255,51,102,0.25); }
+  .result-card.suspicious { background: rgba(255,170,0,0.05); border: 1px solid rgba(255,170,0,0.25); }
 
   .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .result-verdict { font-size: 22px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
@@ -182,6 +195,8 @@
   .result-confidence.phishing { background: rgba(255,51,102,0.1); color: var(--neon-red); }
   .result-confidence.suspicious { background: rgba(255,170,0,0.1); color: var(--neon-yellow); }
 
+  .result-phase { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+
   .result-url {
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
     color: var(--text-dim); direction: ltr; text-align: left;
@@ -193,7 +208,7 @@
   .flag {
     display: flex; align-items: flex-start; gap: 8px;
     font-size: 13px; color: var(--text-dim); padding: 6px 0;
-    border-top: 1px solid rgba(255,255,255,0.03);
+    border-top: 1px solid rgba(255,255,255,0.05);
   }
   .flag-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
 
@@ -210,6 +225,9 @@
 
   .tip-banner.all-safe { background: rgba(0,255,136,0.06); border-color: rgba(0,255,136,0.2); }
   .tip-banner.all-safe .tip-text { color: var(--neon-green); }
+
+  .tip-banner.warn { background: rgba(255,170,0,0.06); border-color: rgba(255,170,0,0.25); }
+  .tip-banner.warn .tip-text { color: var(--neon-yellow); }
 
   /* ── History ── */
   .history-section {
@@ -228,29 +246,12 @@
     direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 70%;
   }
-  .history-badge {
-    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
-  }
+  .history-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
   .history-badge.safe { background: rgba(0,255,136,0.1); color: var(--neon-green); }
   .history-badge.phishing { background: rgba(255,51,102,0.1); color: var(--neon-red); }
   .history-badge.suspicious { background: rgba(255,170,0,0.1); color: var(--neon-yellow); }
 
-  /* ── Install banner ── */
-  .install-banner {
-    background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(168,85,247,0.08));
-    border: 1px solid rgba(0,212,255,0.2); border-radius: var(--radius);
-    padding: 16px; display: flex; align-items: center; gap: 14px;
-    cursor: pointer; transition: all 0.3s;
-  }
-  .install-banner:active { transform: scale(0.98); }
-  .install-icon { font-size: 32px; }
-  .install-text h4 { font-size: 15px; font-weight: 700; }
-  .install-text p { font-size: 12px; color: var(--text-dim); }
-
-  /* ── Animations ── */
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-
-  /* ── Safe area ── */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
     main { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
   }
@@ -263,22 +264,33 @@
     <span class="logo-icon">🛡️</span>
     <div>
       <div class="logo-text">PhishGuard</div>
-      <div class="logo-sub">הגנה מפני קישורים מסוכנים</div>
+      <div class="logo-sub">סורק איומים בזמן אמת</div>
     </div>
   </div>
-  <div class="status-dot" title="המערכת פעילה"></div>
+  <div class="header-right">
+    <button class="settings-btn" onclick="toggleSettings()" title="הגדרות שרת">⚙️</button>
+    <div class="status-dot" id="statusDot" title="בודק חיבור לשרת..."></div>
+  </div>
 </header>
 
 <main>
+  <!-- Settings -->
+  <div class="settings-card" id="settingsCard">
+    <label for="apiBaseInput">כתובת שרת ה־Backend (FastAPI):</label>
+    <input class="settings-input" id="apiBaseInput" type="url" placeholder="http://localhost:8000" />
+    <button class="btn btn-primary" style="padding:10px;font-size:14px;" onclick="saveSettings()">💾 שמור ובדוק חיבור</button>
+  </div>
+
   <!-- Input Section -->
   <div class="input-section">
     <div class="input-label">📩 הדביקו הודעה או קישור</div>
-    <div class="input-hint">העתיקו הודעת SMS חשודה והדביקו כאן — המערכת תמצא את הקישורים לבד</div>
+    <div class="input-hint">העתיקו הודעת SMS חשודה והדביקו כאן — השרת ינתח את הקישור בבידוד מלא</div>
     <textarea class="paste-area" id="pasteArea" placeholder="לדוגמה:
 שלום, חשבון הבנק שלך ננעל. לחץ כאן לשחרור:
-https://bank-leumi-verify.xyz/login"></textarea>
+https://example.com"></textarea>
     <div class="btn-row">
-      <button class="btn btn-paste" id="pasteBtn" onclick="pasteFromClipboard()">📋 הדבק</button>
+      <button class="btn btn-clear" id="clearBtn" onclick="clearAll()" title="נקה טקסט">🗑️ נקה</button>
+      <button class="btn btn-paste" id="pasteBtn" onclick="clearAndPaste()" title="מחק מלל קיים והדבק חדש">📋 נקה והדבק</button>
       <button class="btn btn-primary" id="scanBtn" onclick="startScan()">🔍 בדוק עכשיו</button>
     </div>
   </div>
@@ -291,14 +303,9 @@ https://bank-leumi-verify.xyz/login"></textarea>
 
   <!-- Progress -->
   <div class="progress-section" id="progressSection">
-    <div class="progress-title"><span class="spinner">⚙️</span> מנתח...</div>
+    <div class="progress-title"><span class="spinner">⚙️</span> השרת מנתח את הקישור...</div>
     <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="progress-steps">
-      <div class="p-step" id="ps1"><span class="p-step-icon">⏳</span> בדיקת מאגרי מודיעין</div>
-      <div class="p-step" id="ps2"><span class="p-step-icon">⏳</span> ניתוח דינמי בקופסת חול</div>
-      <div class="p-step" id="ps3"><span class="p-step-icon">⏳</span> הפעלת חוקי זיהוי</div>
-      <div class="p-step" id="ps4"><span class="p-step-icon">⏳</span> הגנה: השמדת Container</div>
-    </div>
+    <div class="progress-sub" id="progressSub">בודק מול VirusTotal, URLScan.io ומנוע האבטחה...</div>
   </div>
 
   <!-- Tip Banner -->
@@ -316,40 +323,76 @@ https://bank-leumi-verify.xyz/login"></textarea>
     <div class="history-title">📜 היסטוריית בדיקות</div>
     <div id="historyList"></div>
   </div>
-
-  <!-- Install PWA -->
-  <div class="install-banner" id="installBanner" style="display:none" onclick="installPWA()">
-    <span class="install-icon">📲</span>
-    <div class="install-text">
-      <h4>התקינו כאפליקציה</h4>
-      <p>הוסיפו למסך הבית לגישה מהירה — בלי חנות אפליקציות</p>
-    </div>
-  </div>
 </main>
 
 <script>
-// ── URL detection regex ──
 const URL_REGEX = /https?:\/\/[^\s<>"')\]،,]+/gi;
-
-// ── History storage ──
 let scanHistory = JSON.parse(localStorage.getItem('phishguard_history') || '[]');
 
-// ── Render history on load ──
+function getApiBase() {
+  const saved = localStorage.getItem('phishguard_api_base');
+  if (saved !== null) return saved.replace(/\/+$/, '');
+  if (location.protocol.startsWith('http') && !location.hostname.endsWith('github.io')) {
+    return '';
+  }
+  return 'http://localhost:8000';
+}
+
+document.getElementById('apiBaseInput').value = getApiBase() || location.origin;
+
+function toggleSettings() {
+  document.getElementById('settingsCard').classList.toggle('show');
+}
+
+async function saveSettings() {
+  const val = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/, '');
+  localStorage.setItem('phishguard_api_base', val);
+  document.getElementById('settingsCard').classList.remove('show');
+  await checkHealth();
+}
+
+async function checkHealth() {
+  const dot = document.getElementById('statusDot');
+  try {
+    const res = await fetch(`${getApiBase()}/api/v1/health`, { method: 'GET' });
+    if (res.ok) {
+      dot.className = 'status-dot online';
+      dot.title = 'מחובר לשרת PhishGuard';
+      return true;
+    }
+  } catch {}
+  dot.className = 'status-dot offline';
+  dot.title = 'אין חיבור לשרת Backend';
+  return false;
+}
+
+checkHealth();
 renderHistory();
 
-// ── Paste from clipboard ──
-async function pasteFromClipboard() {
+function clearAll() {
+  const area = document.getElementById('pasteArea');
+  area.value = '';
+  document.getElementById('detectedLinks').classList.remove('show');
+  document.getElementById('linksList').innerHTML = '';
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('resultsSection').innerHTML = '';
+  document.getElementById('tipBanner').classList.remove('show');
+  area.focus();
+}
+
+async function clearAndPaste() {
+  clearAll();
   try {
     const text = await navigator.clipboard.readText();
-    document.getElementById('pasteArea').value = text;
-    detectLinks(text);
+    if (text) {
+      document.getElementById('pasteArea').value = text;
+      detectLinks(text);
+    }
   } catch {
-    // Fallback - focus textarea so user can Ctrl+V
     document.getElementById('pasteArea').focus();
   }
 }
 
-// ── Auto-detect links on input ──
 document.getElementById('pasteArea').addEventListener('input', (e) => {
   detectLinks(e.target.value);
 });
@@ -365,63 +408,79 @@ function detectLinks(text) {
   }
 
   list.innerHTML = links.map(url =>
-    `<div class="link-chip"><span class="link-status">🔗</span>${url}</div>`
+    `<div class="link-chip"><span class="link-status">🔗</span><span>${escapeHtml(url)}</span></div>`
   ).join('');
   container.classList.add('show');
 }
 
-// ── Scan simulation ──
-const scenarios = {
-  phishing: {
-    triggers: ['verify','bank-','leumi','paypa','g00gle','amaz0n','secure-login',
-               'account-verify','.xyz','.tk','.ml','update-info','faceb',
-               'microso','netfl','appleid','binance-','coinbase-','chase-','wells'],
-    verdict: '🚨 פישינג',
-    verdictEn: 'Phishing',
-    cls: 'phishing',
-    confidence: 92,
-    flags: [
-      { icon: '🔤', text: 'Typosquatting — דומיין מתחזה למותג מוכר' },
-      { icon: '📅', text: 'דומיין חדש — נרשם לפני 3 ימים בלבד' },
-      { icon: '🔒', text: 'תעודת SSL בת יומיים — חשוד מאוד' },
-      { icon: '⚠️', text: 'מילות פיתוי בדף: "verify your account"' },
-    ]
-  },
-  suspicious: {
-    triggers: ['bit.ly','tinyurl','t.co','short','free','winner','prize','gift','click'],
-    verdict: '⚠️ חשוד',
-    verdictEn: 'Suspicious',
-    cls: 'suspicious',
-    confidence: 64,
-    flags: [
-      { icon: '🔄', text: 'שרשרת של 4 הפניות (URL shortener)' },
-      { icon: '⚠️', text: 'מילות מפתח חשודות בתוכן הדף' },
-    ]
-  },
-  safe: {
-    verdict: '✅ בטוח',
-    verdictEn: 'Safe',
-    cls: 'safe',
-    confidence: 95,
-    flags: [
-      { icon: '✅', text: '0/72 מנועי VirusTotal — נקי' },
-      { icon: '✅', text: 'דומיין ותיק, תעודת SSL תקפה' },
-    ]
-  }
-};
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
-function classify(url) {
-  const u = url.toLowerCase();
-  for (const t of scenarios.phishing.triggers) { if (u.includes(t)) return 'phishing'; }
-  for (const t of scenarios.suspicious.triggers) { if (u.includes(t)) return 'suspicious'; }
-  return 'safe';
+function phaseLabel(phase) {
+  const map = {
+    static_api_check: 'שלב 1: בדיקת מאגרי מודיעין (Static API)',
+    dynamic_sandbox: 'שלב 2: ניתוח דינמי ב־Sandbox',
+    heuristic_engine: 'שלב 3: מנוע החלטה היוריסטי',
+  };
+  return map[phase] || phase;
+}
+
+function verdictMeta(verdict) {
+  const v = (verdict || '').toLowerCase();
+  if (v === 'phishing') return { label: '🚨 פישינג', cls: 'phishing', icon: '🚨' };
+  if (v === 'safe') return { label: '✅ בטוח', cls: 'safe', icon: '✅' };
+  return { label: '⚠️ חשוד', cls: 'suspicious', icon: '⚠️' };
+}
+
+function buildFlags(data) {
+  const flags = [];
+
+  if (Array.isArray(data.threat_intel)) {
+    for (const ti of data.threat_intel) {
+      if (ti.error === 'API key not configured.') continue;
+      if (ti.malicious === true) {
+        flags.push({ icon: '🚨', text: `${ti.provider}: זוהה כזדוני (ציון ${Math.round((ti.score || 0) * 100)}%)` });
+      } else if (ti.malicious === false) {
+        flags.push({ icon: '✅', text: `${ti.provider}: נקי` });
+      } else if (ti.error) {
+        flags.push({ icon: '⚠️', text: `${ti.provider}: ${ti.error}` });
+      } else {
+        flags.push({ icon: 'ℹ️', text: `${ti.provider}: לא נמצא מידע קודם במאגר` });
+      }
+    }
+  }
+
+  if (data.dynamic) {
+    if (data.dynamic.final_url && data.dynamic.final_url !== data.submitted_url) {
+      flags.push({ icon: '🔄', text: `יעד סופי לאחר הפניה: ${data.dynamic.final_url}` });
+    }
+    if (data.dynamic.whois && data.dynamic.whois.domain_age_days != null) {
+      flags.push({ icon: '📅', text: `גיל הדומיין: ${data.dynamic.whois.domain_age_days} ימים` });
+    }
+    if (data.dynamic.ssl && data.dynamic.ssl.organization) {
+      flags.push({ icon: '🔒', text: `תעודת SSL: ${data.dynamic.ssl.organization}` });
+    }
+  }
+
+  if (Array.isArray(data.heuristic_flags)) {
+    for (const f of data.heuristic_flags) {
+      flags.push({ icon: '⚠️', text: f.description });
+    }
+  }
+
+  return flags;
 }
 
 async function startScan() {
   const text = document.getElementById('pasteArea').value.trim();
   if (!text) return;
 
-  const urls = text.match(URL_REGEX) || [];
+  const urls = [...new Set(text.match(URL_REGEX) || [])];
   if (urls.length === 0) {
     alert('לא נמצאו קישורים בהודעה. נסו להדביק הודעה עם קישור.');
     return;
@@ -431,93 +490,101 @@ async function startScan() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner">⚙️</span> בודק...';
 
-  // Show progress
   const prog = document.getElementById('progressSection');
-  prog.classList.add('show');
-  document.getElementById('resultsSection').classList.remove('show');
-  document.getElementById('resultsSection').innerHTML = '';
-  document.getElementById('tipBanner').classList.remove('show');
-
-  const steps = ['ps1','ps2','ps3','ps4'];
-  const delays = [1200, 2000, 1200, 600];
   const progBar = document.getElementById('progressBar');
-
-  for (let i = 0; i < steps.length; i++) {
-    const el = document.getElementById(steps[i]);
-    el.className = 'p-step active';
-    el.querySelector('.p-step-icon').innerHTML = '<span class="spinner">⚙️</span>';
-    progBar.style.width = ((i+1) / steps.length * 100) + '%';
-    await sleep(delays[i]);
-    el.className = 'p-step done';
-    el.querySelector('.p-step-icon').textContent = '✅';
-  }
-
-  await sleep(400);
-  prog.classList.remove('show');
-
-  // Build results
   const resultsEl = document.getElementById('resultsSection');
-  let hasPhishing = false;
-  let allSafe = true;
-
-  for (const url of urls) {
-    const type = classify(url);
-    const sc = scenarios[type];
-
-    if (type === 'phishing') hasPhishing = true;
-    if (type !== 'safe') allSafe = false;
-
-    const card = document.createElement('div');
-    card.className = 'result-card ' + sc.cls;
-    card.innerHTML = `
-      <div class="result-header">
-        <div class="result-verdict ${sc.cls}">${sc.verdict}</div>
-        <div class="result-confidence ${sc.cls}">${sc.confidence}%</div>
-      </div>
-      <div class="result-url">${url}</div>
-      <div class="result-flags">
-        ${sc.flags.map(f => `<div class="flag"><span class="flag-icon">${f.icon}</span>${f.text}</div>`).join('')}
-      </div>
-    `;
-    resultsEl.appendChild(card);
-
-    // Save to history
-    addToHistory(url, sc.verdictEn, sc.cls);
-  }
-
-  resultsEl.classList.add('show');
-
-  // Show tip banner
   const tip = document.getElementById('tipBanner');
-  if (hasPhishing) {
-    tip.className = 'tip-banner show';
-    document.getElementById('tipIcon').textContent = '🚫';
-    document.getElementById('tipText').textContent = 'אל תלחצו על הקישור!';
-    document.getElementById('tipSub').textContent = 'זוהה קישור פישינג. מחקו את ההודעה ודווחו לשולח.';
-  } else if (allSafe) {
-    tip.className = 'tip-banner all-safe show';
-    document.getElementById('tipIcon').textContent = '👍';
-    document.getElementById('tipText').textContent = 'הקישורים נראים בטוחים';
-    document.getElementById('tipSub').textContent = 'לא זוהו איומים. עדיין, היזהרו מהזנת מידע אישי.';
-  }
 
-  // Update link chips
-  const chips = document.querySelectorAll('.link-chip');
-  urls.forEach((url, i) => {
-    if (chips[i]) {
-      const type = classify(url);
-      const icon = type === 'safe' ? '✅' : type === 'phishing' ? '🚨' : '⚠️';
-      chips[i].querySelector('.link-status').textContent = icon;
+  prog.classList.add('show');
+  progBar.style.width = '20%';
+  resultsEl.classList.remove('show');
+  resultsEl.innerHTML = '';
+  tip.classList.remove('show');
+
+  let hasPhishing = false;
+  let hasSuspicious = false;
+  let completed = 0;
+
+  try {
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      document.getElementById('progressSub').textContent = `סורק (${i + 1}/${urls.length}): ${url}`;
+      progBar.style.width = `${Math.round(((i + 0.5) / urls.length) * 100)}%`;
+
+      const res = await fetch(`${getApiBase()}/api/v1/analyze-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `שגיאת שרת (${res.status})`);
+      }
+
+      const data = await res.json();
+      completed++;
+      progBar.style.width = `${Math.round((completed / urls.length) * 100)}%`;
+
+      const meta = verdictMeta(data.verdict);
+      if (meta.cls === 'phishing') hasPhishing = true;
+      if (meta.cls === 'suspicious') hasSuspicious = true;
+
+      const flags = buildFlags(data);
+      const confPct = Math.round((data.confidence || 0) * 100);
+
+      const card = document.createElement('div');
+      card.className = 'result-card ' + meta.cls;
+      card.innerHTML = `
+        <div class="result-header">
+          <div class="result-verdict ${meta.cls}">${meta.label}</div>
+          <div class="result-confidence ${meta.cls}">${confPct}%</div>
+        </div>
+        <div class="result-phase">${escapeHtml(phaseLabel(data.decided_in_phase))}</div>
+        <div class="result-url">${escapeHtml(data.submitted_url)}</div>
+        <div class="result-flags">
+          ${flags.map(f => `<div class="flag"><span class="flag-icon">${f.icon}</span><span>${escapeHtml(f.text)}</span></div>`).join('')}
+        </div>
+      `;
+      resultsEl.appendChild(card);
+
+      addToHistory(data.submitted_url, data.verdict, meta.cls);
+
+      const chips = document.querySelectorAll('.link-chip');
+      if (chips[i]) chips[i].querySelector('.link-status').textContent = meta.icon;
     }
-  });
 
-  btn.disabled = false;
-  btn.innerHTML = '🔍 בדוק עכשיו';
+    resultsEl.classList.add('show');
+
+    if (hasPhishing) {
+      tip.className = 'tip-banner show';
+      document.getElementById('tipIcon').textContent = '🚫';
+      document.getElementById('tipText').textContent = 'אל תלחצו על הקישור!';
+      document.getElementById('tipSub').textContent = 'זוהה קישור פישינג. מחקו את ההודעה.';
+    } else if (hasSuspicious) {
+      tip.className = 'tip-banner warn show';
+      document.getElementById('tipIcon').textContent = '⚠️';
+      document.getElementById('tipText').textContent = 'הקישור חשוד או לא מאומת';
+      document.getElementById('tipSub').textContent = 'אל תזינו פרטים אישיים בלי לוודא את מקור ההודעה.';
+    } else {
+      tip.className = 'tip-banner all-safe show';
+      document.getElementById('tipIcon').textContent = '👍';
+      document.getElementById('tipText').textContent = 'הקישורים נראים בטוחים';
+      document.getElementById('tipSub').textContent = 'לא זוהו איומים במאגרי המודיעין.';
+    }
+  } catch (err) {
+    tip.className = 'tip-banner warn show';
+    document.getElementById('tipIcon').textContent = '🔌';
+    document.getElementById('tipText').textContent = 'לא ניתן להתחבר לשרת הסריקה';
+    document.getElementById('tipSub').textContent = `${err.message} — בדקו שהשרת פועל או לחצו ⚙️ להגדרת כתובת השרת.`;
+  } finally {
+    prog.classList.remove('show');
+    btn.disabled = false;
+    btn.innerHTML = '🔍 בדוק עכשיו';
+    checkHealth();
+  }
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── History ──
 function addToHistory(url, verdict, cls) {
   scanHistory.unshift({ url, verdict, cls, time: new Date().toLocaleTimeString('he-IL') });
   if (scanHistory.length > 20) scanHistory.pop();
@@ -532,28 +599,10 @@ function renderHistory() {
   section.style.display = 'block';
   list.innerHTML = scanHistory.slice(0, 10).map(h => `
     <div class="history-item">
-      <span class="history-url">${h.url}</span>
-      <span class="history-badge ${h.cls}">${h.verdict}</span>
+      <span class="history-url">${escapeHtml(h.url)}</span>
+      <span class="history-badge ${h.cls}">${escapeHtml(h.verdict)}</span>
     </div>
   `).join('');
-}
-
-// ── PWA Install ──
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBanner').style.display = 'flex';
-});
-
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => {
-      document.getElementById('installBanner').style.display = 'none';
-      deferredPrompt = null;
-    });
-  }
 }
 </script>
 </body>
